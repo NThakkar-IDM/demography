@@ -43,59 +43,46 @@ import numpy as np
 # Load survey data
 # -------------------------------------------------------------------
 
-BASE = os.path.dirname(os.path.dirname(__file__))
-SURVEYS = os.path.join(BASE, "_data", "_surveys")
+#BASE = os.path.dirname(os.path.dirname(__file__))
+SURVEYS = os.path.join(os.path.sep,
+    "Users","niketth",
+    "OneDrive - Bill & Melinda Gates Foundation",
+    "Work","demographics","nigeria","_surveys")
 
 dhs_ir_paths = [
-    os.path.join(SURVEYS, "DHS5_2006", "PKIR52DT", "pkir52fl.dta"),
-    os.path.join(SURVEYS, "DHS6_2012", "PKIR61DT", "PKIR61FL.DTA"),
-    os.path.join(SURVEYS, "DHS7_2017", "PKIR71DT", "PKIR71FL.DTA"),
-    os.path.join(SURVEYS, "DHS7_2019", "PKIQ7AFL_recode.DTA")
+    os.path.join(SURVEYS,"DHS5_2008","NGIR53DT","NGIR53FL.DTA"),
+    os.path.join(SURVEYS,"DHS6_2013","NGIR6ADT","NGIR6AFL.DTA"),
+    os.path.join(SURVEYS,"DHS7_2018","NGIR7ADT","NGIR7AFL.DTA"),
+    os.path.join(SURVEYS,"DHS8_2023","NGIR8BFL","NGIR8BFL.DTA")
 ]
 
 dhs_br_paths = [
-    os.path.join(SURVEYS, "DHS5_2006", "PKBR52DT", "pkbr52fl.dta"),
-    os.path.join(SURVEYS, "DHS6_2012", "PKBR61DT", "PKBR61FL.DTA"),
-    os.path.join(SURVEYS, "DHS7_2017", "PKBR71DT", "PKBR71FL.DTA")
+    os.path.join(SURVEYS,"DHS5_2008","NGBR53DT","NGBR53FL.DTA"),
+    os.path.join(SURVEYS,"DHS6_2013","NGBR6ADT","NGBR6AFL.DTA"),
+    os.path.join(SURVEYS,"DHS7_2018","NGBR7ADT","NGBR7AFL.DTA"),
+    os.path.join(SURVEYS,"DHS8_2023","NGBR8BFL","NGBR8BFL.DTA")
 ]
 
 dhs_kr_paths = [
-    os.path.join(SURVEYS, "DHS5_2006", "PKKR52DT", "pkkr52fl.dta"),
-    os.path.join(SURVEYS, "DHS6_2012", "PKKR61DT", "PKKR61FL.DTA"),
-    os.path.join(SURVEYS, "DHS7_2017", "PKKR71DT", "PKKR71FL.DTA")
+    os.path.join(SURVEYS,"DHS5_2008","NGKR53DT","NGKR53FL.DTA"),
+    os.path.join(SURVEYS,"DHS6_2013","NGKR6ADT","NGKR6AFL.DTA"),
+    os.path.join(SURVEYS,"DHS7_2018","NGKR7ADT","NGKR7AFL.DTA"),
+    os.path.join(SURVEYS,"DHS8_2023","NGKR8BFL","NGKR8BFL.DTA")
 ]
 
 mics_wm_paths = [
-    os.path.join(SURVEYS, "MICS4_Balochistan_2010", "wm.sav"),
-    os.path.join(SURVEYS, "MICS4_Punjab_2011", "wm.sav"),
-    os.path.join(SURVEYS, "MICS5_GB_2016", "wm.sav"),
-    os.path.join(SURVEYS, "MICS5_KP_2016", "wm.sav"),
-    os.path.join(SURVEYS, "MICS5_Punjab_2014", "wm.sav"),
-    os.path.join(SURVEYS, "MICS5_Sindh_2014", "wm.sav"),
-    os.path.join(SURVEYS, "MICS6_Balochistan_2019", "wm.sav"),
-    os.path.join(SURVEYS, "MICS6_KP_2019", "wm.sav"),
-    os.path.join(SURVEYS, "MICS6_Punjab_2017", "wm.sav"),
-    os.path.join(SURVEYS, "MICS6_Sindh_2018", "wm.sav")
+    os.path.join(SURVEYS, "MICS5_2016","wm.sav"),
+    os.path.join(SURVEYS, "MICS6_2021","wm.sav"),
 ]
 
 mics_bh_paths = [
-    os.path.join(SURVEYS, "MICS6_Balochistan_2019", "bh.sav"),
-    os.path.join(SURVEYS, "MICS6_KP_2019", "bh.sav"),
-    os.path.join(SURVEYS, "MICS6_Punjab_2017", "bh.sav"),
-    os.path.join(SURVEYS, "MICS6_Sindh_2018", "bh.sav")
+    os.path.join(SURVEYS, "MICS5_2016", "bh.sav"),
+    os.path.join(SURVEYS, "MICS6_2021", "bh.sav"),
 ]
 
 mics_ch_paths = [
-    os.path.join(SURVEYS, "MICS4_Balochistan_2010", "ch.sav"),
-    os.path.join(SURVEYS, "MICS4_Punjab_2011", "ch.sav"),
-    os.path.join(SURVEYS, "MICS5_GB_2016", "ch.sav"),
-    os.path.join(SURVEYS, "MICS5_KP_2016", "ch.sav"),
-    os.path.join(SURVEYS, "MICS5_Punjab_2014", "ch.sav"),
-    os.path.join(SURVEYS, "MICS5_Sindh_2014", "ch.sav"),
-    os.path.join(SURVEYS, "MICS6_Balochistan_2019", "ch.sav"),
-    os.path.join(SURVEYS, "MICS6_KP_2019", "ch.sav"),
-    os.path.join(SURVEYS, "MICS6_Punjab_2017", "ch.sav"),
-    os.path.join(SURVEYS, "MICS6_Sindh_2018", "ch.sav")
+    os.path.join(SURVEYS, "MICS5_2016", "ch.sav"),
+    os.path.join(SURVEYS, "MICS6_2021", "ch.sav"),
 ]
 
 # -------------------------------------------------------------------
