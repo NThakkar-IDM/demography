@@ -173,85 +173,85 @@ DHS_KR_SCHEMA = {
 # Raw variable codes follow MICS naming conventions, which vary by wave.
 
 MICS4_WM_SCHEMA = MICS5_WM_SCHEMA = {
-    "HH1": "cluster",             # cluster number
-    "HH2": "hh",                  # household number
-    "LN": "line_num",             # woman's line number
-    "WM6D": "interview_day",      # interview day
-    "WM6M": "interview_mon",      # interview month
-    "WM6Y": "interview_year",     # interview year
-    "WB1M": "mom_birth_mon",      # mother's birth month
-    "WB1Y": "mom_birth_year",     # mother's birth year
-    "WB4": "mom_edu",             # highest education level
-    "CM10": "num_brs",            # total children ever born
-    "HH6": "area",                # urban/rural
-    "wmweight": "weight",         # woman's sample weight
+     "HH1":"cluster", ## woman cluster
+     "HH2":"hh", ## woman hh
+     "LN":"line_num", ## line number
+     "WM6D":"interview_day", ## interview day
+     "WM6M":"interview_mon", ## interview month
+     "WM6Y":"interview_year", ## interview year
+     "WB1M":"mom_birth_mon", ## mom's birth month
+     "WB1Y":"mom_birth_year", ## mom's birth year
+     "WB4":"mom_edu", ## mom's education
+     "HH6":"area", ## urban/rural
+     "HH7":"state", ## state 
+     "Zone":"region", ## region
+     "wmweight":"weight", ## mom's sample weight
 }
 
 MICS6_WM_SCHEMA = {
-    "HH1": "cluster",
-    "HH2": "hh",
-    "LN": "line_num",
-    "WM6D": "interview_day",
-    "WM6M": "interview_mon",
-    "WM6Y": "interview_year",
-    "WB3M": "mom_birth_mon",      # note: WB3M in MICS6 vs WB1M in MICS4/5
-    "WB3Y": "mom_birth_year",     # note: WB3Y in MICS6 vs WB1Y in MICS4/5
-    "welevel": "mom_edu",         # note: welevel in MICS6 vs WB4 in MICS4/5
-    "CM11": "num_brs",            # note: CM11 in MICS6 vs CM10 in MICS4/5
-    "HH6": "area",
-    "wmweight": "weight",
+     "HH1":"cluster", ## woman cluster
+     "HH2":"hh", ## woman hh
+     "LN":"line_num", ## line number
+     "WM6D":"interview_day", ## interview day
+     "WM6M":"interview_mon", ## interview month
+     "WM6Y":"interview_year", ## interview year
+     "WB3M":"mom_birth_mon", ## mom's birth month
+     "WB3Y":"mom_birth_year", ## mom's birth year
+     "WB6A":"mom_edu", ## mom's education
+     "HH6":"area", ## urban/rural
+     "HH7":"state", ## state 
+     "zone":"region", ## region
+     "wmweight":"weight", ## mom's sample weight
 }
 
-# MICS4 and MICS5 did not include a birth history (BH) recode file.
-MICS4_BH_SCHEMA = MICS5_BH_SCHEMA = {}
+MICS4_BH_SCHEMA = MICS5_BH_SCHEMA = {
+     "HH1":"cluster", ## woman cluster
+     "HH2":"hh", ## woman hh
+     "LN":"line_num", ## line number
+     "BHLN":"birth_ln", ## birth history ln
+     "birthord":"bord", ## child birth order
+     "BH4M":"child_birth_mon", ## child birth month
+     "BH4Y":"child_birth_year", ## child birth year
+}
 
 MICS6_BH_SCHEMA = {
-    "HH1": "cluster",
-    "HH2": "hh",
-    "LN": "line_num",
-    "BHLN": "bord",               # birth order (line number in birth history)
-    "BH4M": "child_birth_mon",    # child's birth month
-    "BH4Y": "child_birth_year",   # child's birth year
-    "wmweight": "weight",
+     "HH1":"cluster", ## woman cluster
+     "HH2":"hh", ## woman hh
+     "LN":"line_num", ## line number
+     "BHLN":"birth_ln", ## birth history ln
+     "brthord":"bord", ## child birth order
+     "BH4M":"child_birth_mon", ## child birth month
+     "BH4Y":"child_birth_year", ## child birth year
 }
 
-MICS4_CH_SCHEMA = {
-    "HH1": "cluster",
-    "HH2": "hh",
-    "UF6": "line_num",            # caregiver's line number
-    "AG1D": "child_birth_day",
-    "AG1M": "child_birth_mon",
-    "AG1Y": "child_birth_year",
-    "AG2": "child_age",           # age in completed years
-    "IM3MY": "mcv1_year",         # MCV1 year from vaccination card
-    "IM16": "mcv1",               # MCV1 ever received (mother's recall)
-}
-
-MICS5_CH_SCHEMA = {
-    "HH1": "cluster",
-    "HH2": "hh",
-    "UF6": "line_num",
-    "AG1D": "child_birth_day",
-    "AG1M": "child_birth_mon",
-    "AG1Y": "child_birth_year",
-    "AG2": "child_age",
-    "IM3M1Y": "mcv1_year",        # MCV1 year from card (MICS5 naming)
-    "IM3M2Y": "mcv2_year",        # MCV2 year from card
-    "IM16": "mcv1",               # MCV1 ever received (recall)
+MICS4_CH_SCHEMA = MICS5_CH_SCHEMA = {
+     "HH1":"cluster", ## woman cluster
+     "HH2":"hh", ## woman hh
+     "UF6":"line_num", ## line number for mom
+     "UF9":"complete_interview", ## interview completeness
+     "AG1D":"child_birth_day", ## child birth day
+     "AG1M":"child_birth_mon", ## child birth mon
+     "AG1Y":"child_birth_year", ## child birth year
+     "AG2":"child_age", ## Age to nearest year
+     "IM3MD":"mcv1_day", ## card based day
+     "IM3MM":"mcv1_mon", ## card based mon
+     "IM3MY":"mcv1_year", ## card based day
+     "IM16":"mcv1", ## Ever recieved, recall based
 }
 
 MICS6_CH_SCHEMA = {
-    "HH1": "cluster",
-    "HH2": "hh",
-    "UF4": "line_num",            # note: UF4 in MICS6 vs UF6 in MICS4/5
-    "UB1D": "child_birth_day",    # note: UB1D in MICS6 vs AG1D in MICS4/5
-    "UB1M": "child_birth_mon",
-    "UB1Y": "child_birth_year",
-    "UB2": "child_age",           # note: UB2 in MICS6 vs AG2 in MICS4/5
-    "IM6M1Y": "mcv1_year",        # MCV1 year from card (MICS6 naming)
-    "IM6M2Y": "mcv2_year",        # MCV2 year from card (MICS6 naming)
-    "IM26": "mcv1",               # MCV1 ever received (MICS6 naming)
-    "IM26A": "num_doses",         # total measles/rubella doses received
+     "HH1":"cluster", ## woman cluster
+     "HH2":"hh", ## woman hh
+     "UF4":"line_num", ## line number for mom
+     "UF17":"complete_interview", ## interview completeness
+     "UB1D":"child_birth_day", ## child birth day
+     "UB1M":"child_birth_mon", ## child birth mon
+     "UB1Y":"child_birth_year", ## child birth year
+     "UB2":"child_age", ## Age to nearest year
+     "IM6N1D":"mcv1_day", ## card based day
+     "IM6N1M":"mcv1_mon", ## card based mon
+     "IM6N1Y":"mcv1_year", ## card based day
+     "IM26":"mcv1", ## Ever recieved, recall based
 }
 
 def get_schema(path):
