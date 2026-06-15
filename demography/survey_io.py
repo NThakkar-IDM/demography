@@ -444,6 +444,13 @@ def clean_mics(df):
             df["mcv2_dose"] = df["num_doses"] > 1
             df["mcv2"] = (df["mcv2"] | df["mcv2_dose"]).astype(int)
 
+    if "region" in df:
+        df["region"] = df["region"].astype(str).str.lower()
+
+    if "state" in df:
+        df["state"] = df["state"].astype(str).str.lower()\
+            .str.replace("fct abuja","abuja").str.replace("fct","abuja")
+
     return df
 
 
@@ -552,20 +559,10 @@ def load_survey(path, add_survey=False, convert_categoricals=True, columns=None)
     if add_survey:
         df["survey"] = survey_name
 
-    # Province for MICS (read from folder)
-    if survey == "mics" and "province" not in df.columns:
-        parts = survey_name.split("_")
-        df["province"] = parts[1].lower()
-
     # Normalize weights
     if "weight" in df:
         df["weight"] *= 1e-6
         df["weight"] *= 1. / (df["weight"].sum())
-
-    # Add the special weights for AJK and GB from the 2017 DHS
-    if "sweight" in df:
-        df["sweight"] *= 1e-6
-        df["sweight"] *= 1. / (df["sweight"].sum())
 
     # Restrict to requested columns
     if columns is not None:
