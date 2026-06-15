@@ -138,7 +138,8 @@ DHS_IR_SCHEMA = {
     "v106": "mom_edu",         # highest education level
     "v224": "num_brs",         # number of entries in birth recode
     "v008": "interview_date",  # CMC date of interview
-    "v024": "province",        # region/province
+    "v023": "strata",          # sample strata (state or region+state+U/R)"
+    "v024": "region",        # region/province
     "v025": "area",            # urban/rural
     "v005": "weight",          # sample weight (÷1e6)
 }
@@ -150,7 +151,8 @@ DHS_BR_SCHEMA = {
     "v011": "mom_DoB",         # CMC date of birth of mother
     "v008": "interview_date",  # CMC date of interview
     "v005": "weight",          # sample weight (÷1e6)
-    "v024": "province",        # region/province
+    "v023": "strata",          # sample strata (state or region+state+U/R)"
+    "v024": "region",        # region/province
 }
 
 DHS_KR_SCHEMA = {
@@ -288,6 +290,7 @@ def get_schema(path):
 # Cleaning utilities
 # -------------------------------------------------------------------
 
+STATE_FROM_STRATA = r"^(?:[ns][ewcs]\s+)?(.*?)(?:\s+(?:urban|rural))?$"
 PROVINCE_MAP = {
     "nwfp": "kp",
     "islamabad (ict)": "ict",
@@ -384,6 +387,8 @@ def clean_dhs(df):
         df["caseid"] = df["caseid"].astype(str).str.strip()
     if "province" in df:
         df["province"] = df["province"].astype(str).str.lower().replace(PROVINCE_MAP)
+    if "region" in df:
+        df["region"] = df["region"].astype(str).str.lower()
     if "area" in df:
         df["area"] = df["area"].astype(str).str.lower()
     if "mom_edu" in df:
@@ -400,6 +405,10 @@ def clean_dhs(df):
         df["mcv2"] = df["mcv2"].astype(str).str.lower().replace(MCV_CATS)
     if "live_child" in df:
         df["live_child"] = df["live_child"].astype(str).str.lower()
+    if "strata" in df:
+        df["state"] = df["strata"].str.lower().str.extract(STATE_FROM_STRATA)[0]
+        df["state"] = df["state"].str.replace("fct abuja","abuja")\
+                            .str.replace("fct","abuja")
     return df
 
 
