@@ -443,7 +443,8 @@ def clean_dhs(df):
         df["live_child"] = df["live_child"].astype(str).str.lower()
     
     if "strata" in df:
-        df["state"] = df["strata"].str.lower().str.extract(STATE_FROM_STRATA)[0]
+        df["state"] = df["strata"].astype(str).str.lower()\
+                        .str.extract(STATE_FROM_STRATA)[0]
         df["state"] = df["state"].str.replace("fct abuja","abuja")\
                             .str.replace("fct","abuja")
     return df
@@ -539,7 +540,7 @@ def load_survey(path, add_survey=False, convert_categoricals=True, columns=None)
     # Restrict to requested columns
     if columns is not None:    
         df = df[columns + int(add_survey)*["survey"]]
-        
+
     return df
 
 # -------------------------------------------------------------------
