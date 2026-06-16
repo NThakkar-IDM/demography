@@ -3,7 +3,7 @@
 Unified survey-loading utilities for DHS and MICS (Pakistan).
 
 1. Set your survey directory:
-   Edit BASE and SURVEYS at the top of this file so that SURVEYS points
+   Edit SURVEYS at the top of this file so that SURVEYS points
    to the folder containing your DHS and MICS survey subfolders
    (e.g. DHS5_2006/, MICS6_Punjab_2017/, etc.).
 
@@ -41,10 +41,8 @@ import pandas as pd
 import numpy as np
 
 # -------------------------------------------------------------------
-# Load survey data
+# Paths to survey data
 # -------------------------------------------------------------------
-
-#BASE = os.path.dirname(os.path.dirname(__file__))
 SURVEYS = os.path.join(os.path.sep,
     "Users","niketth",
     "OneDrive - Bill & Melinda Gates Foundation",
@@ -86,9 +84,9 @@ mics_ch_paths = [
     os.path.join(SURVEYS, "MICS6_2021", "ch.sav"),
 ]
 
-# -------------------------------------------------------------------
-# Schemas (full raw→recoded mapping)
-# -------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Schemas (which map survey specific column names to interpretable, harmonized names)
+# -------------------------------------------------------------------------------
 
 # --- DHS schemas ---
 # Raw variable codes follow the DHS recode manual naming convention.
@@ -133,6 +131,7 @@ DHS_KR_SCHEMA = {
     "h9y": "mcv1_yr",          # year of MCV1 vaccination (from card)
 }
 
+## DHS8 has mcv2
 DHS8_KR_SCHEMA = {
     "caseid": "caseid",        # mother's unique ID
     "bord": "bord",            # birth order number
@@ -269,17 +268,22 @@ def get_md_and_schema(path):
 
     if survey == "dhs":
         if int(wave) < 8:
-            return survey_name, recode, {"ir": DHS_IR_SCHEMA,"br": DHS_BR_SCHEMA,"kr": DHS_KR_SCHEMA}[recode]
+            return (survey_name, recode,
+                {"ir":DHS_IR_SCHEMA,"br":DHS_BR_SCHEMA,"kr":DHS_KR_SCHEMA}[recode])
         else:
-            return survey_name, recode, {"ir": DHS_IR_SCHEMA,"br": DHS_BR_SCHEMA,"kr": DHS8_KR_SCHEMA}[recode]
+            return (survey_name, recode,
+                {"ir":DHS_IR_SCHEMA,"br":DHS_BR_SCHEMA,"kr":DHS8_KR_SCHEMA}[recode])
 
     elif survey == "mics":
         if recode == "wm":
-            return survey_name, recode, {4: MICS4_WM_SCHEMA, 5: MICS5_WM_SCHEMA, 6: MICS6_WM_SCHEMA}[int(wave)]
+            return (survey_name, recode,
+                {4:MICS4_WM_SCHEMA, 5:MICS5_WM_SCHEMA, 6:MICS6_WM_SCHEMA}[int(wave)])
         if recode == "bh":
-            return survey_name, recode, {4: MICS4_BH_SCHEMA, 5: MICS5_BH_SCHEMA, 6: MICS6_BH_SCHEMA}[int(wave)]
+            return (survey_name, recode,
+                {4:MICS4_BH_SCHEMA, 5:MICS5_BH_SCHEMA, 6:MICS6_BH_SCHEMA}[int(wave)])
         if recode == "ch":
-            return survey_name, recode, {4: MICS4_CH_SCHEMA, 5: MICS5_CH_SCHEMA, 6: MICS6_CH_SCHEMA}[int(wave)]
+            return (survey_name, recode,
+                {4:MICS4_CH_SCHEMA, 5:MICS5_CH_SCHEMA, 6:MICS6_CH_SCHEMA}[int(wave)])
 
     raise ValueError(f"No schema for path: {path}")
 
@@ -385,8 +389,8 @@ def fix_year_col(x):
 
 def compute_mics_mom_age(df):
     birth_year = fix_year_col(df["mom_birth_year"])
-    birth_mon  = fix_month_col(df["mom_birth_mon"]).fillna(7)
-    int_mon    = fix_month_col(df["interview_mon"]).fillna(7)
+    birth_mon  = fix_month_col(df["mom_birth_mon"])
+    int_mon    = fix_month_col(df["interview_mon"])
     int_year   = fix_year_col(df["interview_year"])
 
     ## Make date times
@@ -400,7 +404,7 @@ def compute_mics_mom_age(df):
     )
 
     ## appoximate age in years
-    df["mom_age"] = (df["interview_date"] - df["mom_DoB"]).dt.days / 365#.25
+    df["mom_age"] = (df["interview_date"] - df["mom_DoB"]).dt.days / 365.25
 
     return df
 
@@ -533,13 +537,10 @@ def load_survey(path, add_survey=False, convert_categoricals=True, columns=None)
         df["weight"] *= 1. / (df["weight"].sum())
 
     # Restrict to requested columns
-    if columns is not None:
-        if add_survey:
-            columns.append("survey")
-        df = df[columns]
-
+    if columns is not None:    
+        df = df[columns + int(add_survey)*["survey"]]
+        
     return df
-
 
 # -------------------------------------------------------------------
 # DEBUG: run this file directly to inspect all survey data
