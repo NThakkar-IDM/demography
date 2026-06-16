@@ -35,6 +35,7 @@ Supported recode types: IR, BR, KR (DHS); WM, BH, CH (MICS)
 """
 
 import os
+import sys
 import re
 import pandas as pd
 import numpy as np
@@ -86,43 +87,6 @@ mics_ch_paths = [
 ]
 
 # -------------------------------------------------------------------
-# Infer survey type and recode type
-# -------------------------------------------------------------------
-
-def infer_survey_type(path):
-    lower = path.lower()
-    if "dhs" in lower: return "dhs"
-    if "mics" in lower: return "mics"
-    raise ValueError(f"Cannot detect survey type from path: {path}")
-
-def infer_survey_folder(path):
-    """Return the folder name that includes 'dhs' or 'mics'."""
-    parts = path.lower().split(os.path.sep)
-    for p in parts:
-        if "dhs" in p or "mics" in p:
-            return p
-    return None
-
-def infer_mics_wave(path):
-    lower = path.lower()
-    if "mics6" in lower: return 6
-    if "mics5" in lower: return 5
-    if "mics4" in lower: return 4
-    raise ValueError(f"Cannot detect MICS wave from path: {path}")
-
-
-def infer_recode_type(path):
-    base = os.path.basename(path).lower()
-    if "ir" in base or "iq" in base: return "ir"
-    if "br" in base: return "br"
-    if "kr" in base: return "kr"
-    if base.startswith("wm"): return "wm"
-    if base.startswith("bh"): return "bh"
-    if base.startswith("ch"): return "ch"
-    raise ValueError(f"Cannot infer recode type from filename: {path}")
-
-
-# -------------------------------------------------------------------
 # Schemas (full raw→recoded mapping)
 # -------------------------------------------------------------------
 
@@ -139,7 +103,7 @@ DHS_IR_SCHEMA = {
     "v224": "num_brs",         # number of entries in birth recode
     "v008": "interview_date",  # CMC date of interview
     "v023": "strata",          # sample strata (state or region+state+U/R)"
-    "v024": "region",        # region/province
+    "v024": "region",          # region/province
     "v025": "area",            # urban/rural
     "v005": "weight",          # sample weight (÷1e6)
 }
@@ -163,6 +127,21 @@ DHS_KR_SCHEMA = {
     "v011": "mom_DoB",         # CMC date of birth of mother
     "v008": "interview_date",  # CMC date of interview
     "h9": "mcv1",              # measles/MCV1 vaccination status
+    "v005": "weight",          # sample weight (÷1e6)
+    "h9d": "mcv1_day",         # day of MCV1 vaccination (from card)
+    "h9m": "mcv1_mon",         # month of MCV1 vaccination (from card)
+    "h9y": "mcv1_yr",          # year of MCV1 vaccination (from card)
+}
+
+DHS8_KR_SCHEMA = {
+    "caseid": "caseid",        # mother's unique ID
+    "bord": "bord",            # birth order number
+    "b3": "child_DoB",         # CMC date of birth of child
+    "b5": "live_child",        # is the child alive? (yes/no)
+    "v011": "mom_DoB",         # CMC date of birth of mother
+    "v008": "interview_date",  # CMC date of interview
+    "h9": "mcv1",              # measles/MCV1 vaccination status
+    "h9a": "mcv2",             # MCV2 status
     "v005": "weight",          # sample weight (÷1e6)
     "h9d": "mcv1_day",         # day of MCV1 vaccination (from card)
     "h9m": "mcv1_mon",         # month of MCV1 vaccination (from card)
@@ -254,40 +233,58 @@ MICS6_CH_SCHEMA = {
      "IM26":"mcv1", ## Ever recieved, recall based
 }
 
-def get_schema(path):
-    survey = infer_survey_type(path)
-    recode = infer_recode_type(path)
-    survey_name = infer_survey_folder(path)
+# -------------------------------------------------------------------
+# Functions to infer survey type, recode type, and schema
+# -------------------------------------------------------------------
+SURVEY_FROM_PATH = re.escape(os.path.sep)\
+        +r"((?:DHS|MICS)\d_(?:19|20)\d{2})"\
+        +re.escape(os.path.sep)
+def infer_survey_name(path):
+    m = re.search(SURVEY_FROM_PATH,path)
+    if m:
+        return m.group(1).lower()
+    else:
+        raise ValueError(f"Cannot detect survey name from path: {path}"
+                "\nMake sure the survey data files are organized correctly!")
 
-    dhs_recode_schema = {
-        "ir": DHS_IR_SCHEMA,
-        "br": DHS_BR_SCHEMA,
-        "kr": DHS_KR_SCHEMA
-    }
+def infer_recode_type(path):
+    base = os.path.basename(path).lower()
+    if "ir" in base or "iq" in base: return "ir"
+    if "br" in base: return "br"
+    if "kr" in base: return "kr"
+    if base.startswith("wm"): return "wm"
+    if base.startswith("bh"): return "bh"
+    if base.startswith("ch"): return "ch"
+    raise ValueError(f"Cannot infer recode type from filename: {path}")
+
+def get_md_and_schema(path):
+
+    ## Get the survey info from the path, including
+    ## The recode type.
+    survey_name = infer_survey_name(path)
+    survey, wave, year = re.search(
+        r"^(.*)(\d)_(\d{4})$",
+        survey_name).groups()
+    recode = infer_recode_type(path)
 
     if survey == "dhs":
-        if survey_name == "dhs7_2017":
-            schema = dhs_recode_schema[recode].copy()
-            schema["sv005"] = "sweight"
-            if recode == "kr":
-                schema["h9a"] = "mcv2"
-            return schema
+        if int(wave) < 8:
+            return survey_name, recode, {"ir": DHS_IR_SCHEMA,"br": DHS_BR_SCHEMA,"kr": DHS_KR_SCHEMA}[recode]
         else:
-            return dhs_recode_schema[recode]
+            return survey_name, recode, {"ir": DHS_IR_SCHEMA,"br": DHS_BR_SCHEMA,"kr": DHS8_KR_SCHEMA}[recode]
 
-    wave = infer_mics_wave(path)
-    if recode == "wm":
-        return {4: MICS4_WM_SCHEMA, 5: MICS5_WM_SCHEMA, 6: MICS6_WM_SCHEMA}[wave]
-    if recode == "bh":
-        return {4: MICS4_BH_SCHEMA, 5: MICS5_BH_SCHEMA, 6: MICS6_BH_SCHEMA}[wave]
-    if recode == "ch":
-        return {4: MICS4_CH_SCHEMA, 5: MICS5_CH_SCHEMA, 6: MICS6_CH_SCHEMA}[wave]
+    elif survey == "mics":
+        if recode == "wm":
+            return survey_name, recode, {4: MICS4_WM_SCHEMA, 5: MICS5_WM_SCHEMA, 6: MICS6_WM_SCHEMA}[int(wave)]
+        if recode == "bh":
+            return survey_name, recode, {4: MICS4_BH_SCHEMA, 5: MICS5_BH_SCHEMA, 6: MICS6_BH_SCHEMA}[int(wave)]
+        if recode == "ch":
+            return survey_name, recode, {4: MICS4_CH_SCHEMA, 5: MICS5_CH_SCHEMA, 6: MICS6_CH_SCHEMA}[int(wave)]
 
     raise ValueError(f"No schema for path: {path}")
 
-
 # -------------------------------------------------------------------
-# Cleaning utilities
+# Data maps and cleaning functions (to harmonize values across surveys)
 # -------------------------------------------------------------------
 
 STATE_FROM_STRATA = r"^(?:[ns][ewcs]\s+)?(.*?)(?:\s+(?:urban|rural))?$"
@@ -372,6 +369,11 @@ MONTH_FIX = {
     "inconsistent": np.nan, "inconsistant": np.nan
 }
 
+def cms_to_datetime(a, d=15):
+    years = 1900 + ((a - 1) // 12)
+    months = a - 12*(years-1900)
+    return pd.to_datetime({"year": years, "month": months, "day": d})
+
 def fix_month_col(x):
     return (
         x.astype(str).str.strip().str.lower()
@@ -381,36 +383,66 @@ def fix_month_col(x):
 def fix_year_col(x):
     return pd.to_numeric(x, errors="coerce")
 
+def compute_mics_mom_age(df):
+    birth_year = fix_year_col(df["mom_birth_year"])
+    birth_mon  = fix_month_col(df["mom_birth_mon"]).fillna(7)
+    int_mon    = fix_month_col(df["interview_mon"]).fillna(7)
+    int_year   = fix_year_col(df["interview_year"])
+
+    ## Make date times
+    df["mom_DoB"] = pd.to_datetime(
+        {"year": birth_year, "month": birth_mon, "day": 1},
+        errors="coerce"
+    )
+    df["interview_date"] = pd.to_datetime(
+        {"year": int_year, "month": int_mon, "day": 1},
+        errors="coerce"
+    )
+
+    ## appoximate age in years
+    df["mom_age"] = (df["interview_date"] - df["mom_DoB"]).dt.days / 365#.25
+
+    return df
 
 def clean_dhs(df):
     if "caseid" in df:
         df["caseid"] = df["caseid"].astype(str).str.strip()
+    
     if "province" in df:
         df["province"] = df["province"].astype(str).str.lower().replace(PROVINCE_MAP)
+    
     if "region" in df:
         df["region"] = df["region"].astype(str).str.lower()
+    
     if "area" in df:
         df["area"] = df["area"].astype(str).str.lower()
+    
     if "mom_edu" in df:
         df["mom_edu"] = df["mom_edu"].astype(str).str.lower().replace(EDU_CATS)
+    
     if "mcv1" in df:
         df["mcv1"] = df["mcv1"].astype(str).str.lower().replace(MCV_CATS)
+    
     if "mcv1_day" in df:
         df["mcv1_day"] = pd.to_numeric(df["mcv1_day"], errors="coerce")
+    
     if "mcv1_mon" in df:
         df["mcv1_mon"] = pd.to_numeric(df["mcv1_mon"], errors="coerce")
+    
     if "mcv1_yr" in df:
         df["mcv1_yr"] = pd.to_numeric(df["mcv1_yr"], errors="coerce")
+    
     if "mcv2" in df:
         df["mcv2"] = df["mcv2"].astype(str).str.lower().replace(MCV_CATS)
+    
     if "live_child" in df:
         df["live_child"] = df["live_child"].astype(str).str.lower()
+    
     if "strata" in df:
         df["state"] = df["strata"].str.lower().str.extract(STATE_FROM_STRATA)[0]
         df["state"] = df["state"].str.replace("fct abuja","abuja")\
                             .str.replace("fct","abuja")
     return df
-
 
 def clean_mics(df):
     if "area" in df:
@@ -453,103 +485,39 @@ def clean_mics(df):
 
     return df
 
-
 # -------------------------------------------------------------------
-# Fill in missing year values
-# -------------------------------------------------------------------
-
-def cms_to_datetime(a, d=15):
-    years = 1900 + ((a - 1) // 12)
-    months = (a - 1) % 12 + 1
-    return pd.to_datetime({"year": years, "month": months, "day": d})
-
-def infer_year_from_path(path):
-    for part in path.split(os.path.sep):
-        m = re.search(r"(19|20)\d{2}", part)
-        if m: return int(m.group())
-    return None
-
-def add_year_column(df, path):
-    survey = infer_survey_type(path)
-    survey_name = infer_survey_folder(path)
-    fallback = infer_year_from_path(path)
-    single_year_surveys = ["mics4_balochistan_2010", "mics4_punjab_2011",
-                           "mics5_sindh_2014", "mics5_punjab_2014",
-                           "mics6_kp_2019"]
-
-    if survey == "dhs":
-        dt = df["interview_date"]
-        if np.issubdtype(dt.dtype, np.number):
-            dt = cms_to_datetime(dt)
-        df["year"] = dt.dt.year
-
-    if survey == "mics":
-        if "interview_year" in df.columns:
-            df["year"] = fix_year_col(df["interview_year"])
-            if survey_name in single_year_surveys:
-                df["year"] = df["year"].fillna(fallback)
-        elif survey_name in single_year_surveys:
-            df["year"] = fallback
-    return df
-
-
-# -------------------------------------------------------------------
-# Fill in missing mom age info
-# -------------------------------------------------------------------
-
-def compute_mics_mom_age(df):
-    birth_year = fix_year_col(df["mom_birth_year"])
-    birth_mon  = fix_month_col(df["mom_birth_mon"]).fillna(7)
-    int_mon    = fix_month_col(df["interview_mon"]).fillna(7)
-    int_year   = fix_year_col(df["year"])
-
-    df["mom_DoB"] = pd.to_datetime(
-        {"year": birth_year, "month": birth_mon, "day": 1},
-        errors="coerce"
-    )
-
-    df["interview_date"] = pd.to_datetime(
-        {"year": int_year, "month": int_mon, "day": 1},
-        errors="coerce"
-    )
-
-    df["mom_age_cont"] = (df["interview_date"] - df["mom_DoB"]).dt.days / 365.25
-
-    bins = np.arange(15, 55, 5)
-    labels = [f"{a}-{a+4}" for a in bins[:-1]]
-    df["mom_age"] = pd.cut(df["mom_age_cont"], bins=bins, labels=labels)
-
-    return df
-
-
-# -------------------------------------------------------------------
-# Main loader
+# Main survey loader
 # -------------------------------------------------------------------
 
 def load_survey(path, add_survey=False, convert_categoricals=True, columns=None):
-    schema = get_schema(path)
-    survey = infer_survey_type(path)
-    recode = infer_recode_type(path)
-    survey_name = infer_survey_folder(path)
-
+    
+    ## get survey info
+    survey_name, recode, schema = get_md_and_schema(path)
+    survey, wave, year = re.search(
+        r"^(.*)(\d)_(\d{4})$",
+        survey_name).groups()
+    
     # Always load all raw schema columns
     raw_cols = list(schema.keys())
 
+    ## Load the data
     if survey == "dhs":
         df = pd.read_stata(path, columns=raw_cols,
                            convert_categoricals=convert_categoricals)
-    else:
+    elif survey == "mics":
         df = pd.read_spss(path, usecols=raw_cols,
                           convert_categoricals=convert_categoricals)
+    else:
+        raise TypeError(f"Pandas i/o not specified for survey type {survey}!")
 
     # Apply renaming
     df = df.rename(columns=schema)
 
     # Clean
-    df = clean_dhs(df) if survey == "dhs" else clean_mics(df)
-
-    # Add year
-    df = add_year_column(df, path)
+    if survey == "dhs":
+        df = clean_dhs(df)
+    elif survey == "mics":
+        df = clean_mics(df)
 
     # Compute mom_age (MICS WM only)
     if survey == "mics" and recode == "wm":
@@ -566,14 +534,9 @@ def load_survey(path, add_survey=False, convert_categoricals=True, columns=None)
 
     # Restrict to requested columns
     if columns is not None:
-        keep = [c for c in columns if c in df.columns]
         if add_survey:
-            keep.append("survey")
-        if survey_name == "dhs7_2017" and "weight" in columns:
-            keep.append("sweight")
-        if "mcv1" in columns and "mcv2" in df.columns:
-            keep.append("mcv2")
-        df = df[keep]
+            columns.append("survey")
+        df = df[columns]
 
     return df
 
@@ -582,7 +545,7 @@ def load_survey(path, add_survey=False, convert_categoricals=True, columns=None)
 # DEBUG: run this file directly to inspect all survey data
 # -------------------------------------------------------------------
 
-def debug_print_unique_values(paths, columns=None, max_unique=20, dropna=True):
+def debug_print_unique_values(path, columns=None, max_unique=20):
     """
     Load each survey file via load_survey() and print all unique values
     per column. Use this to verify that province names, education
@@ -590,44 +553,32 @@ def debug_print_unique_values(paths, columns=None, max_unique=20, dropna=True):
     are all behaving as expected. Update the fix maps above if you
     spot anything unexpected.
     """
-    print("\n==================== SURVEY DEBUG REPORT =====================")
+    print("\n--------------------------------------------------------------")
+    print(f"FILE: {path}")
+    print("--------------------------------------------------------------")
 
-    for path in paths:
-        print("\n--------------------------------------------------------------")
-        print(f"FILE: {path}")
-        print("--------------------------------------------------------------")
+    ## Load survey files, catching exceptions
+    ## so you can see which fail and which succeed without 
+    ## exiting.
+    try:
+        df = load_survey(path, add_survey=True, convert_categoricals=True, columns=columns)
+    except Exception as e:
+        print(f"  ERROR loading file: {e}")
+        return
 
-        try:
-            df = load_survey(path, add_survey=True, convert_categoricals=True, columns=columns)
-        except Exception as e:
-            print(f"  ERROR loading file: {e}")
-            continue
-
-        print(f"Loaded columns: {list(df.columns)}\n")
-
-        for col in df.columns:
-            values = df[col].unique()
-
-            if dropna:
-                values = [v for v in values if pd.notna(v)]
-
-            try:
-                values = sorted(values)
-            except Exception:
-                pass
-
-            print(f"  {col} ({len(values)} unique):")
-
-            if len(values) > max_unique:
-                shown = values[:max_unique]
-                print(f"    {shown} ... ({len(values) - max_unique} more)")
-            else:
-                print(f"    {values}")
-
-        print()
+    ## Print out a summary
+    print(f"Loaded columns: {list(df.columns)}\n")
+    for col in df.columns:
+        values = df[col].unique()
+        print(f"  {col} ({len(values)} unique):")
+        if len(values) > max_unique:
+            shown = values[:max_unique]
+            print(f"    {shown} ... ({len(values) - max_unique} more)")
+        else:
+            print(f"    {values}")
+    print()
 
 
-# Optionally uncomment the `columns` filter to narrow the inspection.
 if __name__ == "__main__":
     all_paths = (
         dhs_ir_paths +
@@ -637,9 +588,10 @@ if __name__ == "__main__":
         mics_bh_paths +
         mics_ch_paths
     )
-
-    debug_print_unique_values(
-        all_paths,
-        # columns = ['province', 'mcv1', 'mcv1_day', 'mcv1_mon', 'mcv1_yr'],
-        max_unique=10,
-    )
+    print("\n==================== SURVEY DEBUG REPORT =====================")
+    for path in all_paths:
+        debug_print_unique_values(
+            path,
+            # columns = ['province', 'mcv1', 'mcv1_day', 'mcv1_mon', 'mcv1_yr'],
+            max_unique=10,
+        )
