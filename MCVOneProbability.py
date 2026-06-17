@@ -3,7 +3,6 @@
 Estimating the probability of getting an MCV one dose by birthdate and location
 in Nigeria. """
 import sys
-import survey
 
 ## For filepaths
 import os
@@ -14,27 +13,13 @@ import warnings
 ## I/O functionality is built on top
 ## of pandas
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
-
-## For making PDFs
-from matplotlib.backends.backend_pdf import PdfPages
 
 ## For regression estimates
 import survey.logistic as lr
 
 # For loading, renaming, and unifying DHS and MICS data
 import survey_io as sio
-
-## For reference
-colors = ["#375E97","#FB6542","#FFBB00","#3F681C"]
-
-def axes_setup(axes):
-    axes.spines["left"].set_position(("axes",-0.025))
-    axes.spines["top"].set_visible(False)
-    axes.spines["right"].set_visible(False)
-    return
-
 
 if __name__ == "__main__":
 
