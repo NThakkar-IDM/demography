@@ -27,7 +27,7 @@ import pandas as pd
 import numpy as np
 
 # For loading, renaming, and unifying DHS and MICS data
-from survey_io import load_survey, infer_survey_name, dhs_ir_paths
+import survey_io as sio
 
 # --------------------------------------------------------------------
 # Config
@@ -41,8 +41,8 @@ if __name__ == "__main__":
     ir_columns = ["mom_DoB", "interview_date", "mom_age", "state",
               "area", "mom_edu", "num_brs", "weight"]
     irs = {
-        infer_survey_name(path): load_survey(path, True, True, ir_columns)
-        for path in dhs_ir_paths
+        sio.infer_survey_name(path): sio.load_survey(path, True, True, ir_columns)
+        for path in sio.dhs_ir_paths
     }
     irs = pd.concat(irs,axis=0).reset_index(drop=True)
     print("\nFull dataset:")
@@ -52,7 +52,8 @@ if __name__ == "__main__":
     # which is when the weights were estimated
     irs["year"] = irs["survey"].str.slice(start=5).astype(np.int64)
 
-    # Create a table of demographic cells
+    # Create a table of demographic cells associated with different
+    # types of moms.
     df = irs[["state","area","mom_edu","mom_age","weight","year"]].copy()
     df = df.groupby([c for c in df.columns if c != "weight"],
             observed=False).sum().fillna(0)["weight"]
