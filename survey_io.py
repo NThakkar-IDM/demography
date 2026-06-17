@@ -352,27 +352,6 @@ def cmc_to_datetime(a, d=15):
     months = a - 12*(years-1900)
     return pd.to_datetime({"year": years, "month": months, "day": d})
 
-def compute_mics_mom_age(df):
-    birth_year = fix_year_col(df["mom_birth_year"])
-    birth_mon = fix_month_col(df["mom_birth_mon"])
-    int_mon = fix_month_col(df["interview_mon"])
-    int_year = fix_year_col(df["interview_year"])
-
-    ## Make date times
-    df["mom_DoB"] = pd.to_datetime(
-        {"year": birth_year, "month": birth_mon, "day": 1},
-        errors="coerce"
-    )
-    df["interview_date"] = pd.to_datetime(
-        {"year": int_year, "month": int_mon, "day": df["interview_day"]},
-        errors="coerce"
-    )
-
-    ## Appoximate age in years
-    df["mom_age"] = (df["interview_date"] - df["mom_DoB"]).dt.days / 365.25
-
-    return df
-
 def clean_dhs(df):
     
     if "caseid" in df:
