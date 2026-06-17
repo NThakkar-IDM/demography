@@ -1,0 +1,4 @@
+# Simple git ignore to create a landing space for plots
+*.png
+*.jpeg
+*.pdf
