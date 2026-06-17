@@ -38,6 +38,12 @@ import pandas as pd
 import numpy as np
 
 # -------------------------------------------------------------------
+# Time configuration across all the different estimates
+# -------------------------------------------------------------------
+YEAR_MIN = 2006
+YEAR_MAX = 2024 # inclusive, i.e. through YEAR_MAX
+
+# -------------------------------------------------------------------
 # Paths to survey data
 # -------------------------------------------------------------------
 SURVEY_DIR = os.path.join(os.path.sep,
