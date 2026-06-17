@@ -189,6 +189,9 @@ MICS4_BH_SCHEMA = MICS5_BH_SCHEMA = {
      "HH1":"cluster", ## woman cluster
      "HH2":"hh", ## woman hh
      "LN":"line_num", ## line number
+     "HH6":"area", ## urban/rural
+     "HH7":"state", ## state 
+     "Zone":"region", ## region
      "BHLN":"birth_ln", ## birth history ln
      "birthord":"bord", ## child birth order
      "BH4M":"child_birth_mon", ## child birth month
@@ -199,6 +202,9 @@ MICS6_BH_SCHEMA = {
      "HH1":"cluster", ## woman cluster
      "HH2":"hh", ## woman hh
      "LN":"line_num", ## line number
+     "HH6":"area", ## urban/rural
+     "HH7":"state", ## state 
+     "zone":"region", ## region
      "BHLN":"birth_ln", ## birth history ln
      "brthord":"bord", ## child birth order
      "BH4M":"child_birth_mon", ## child birth month
