@@ -32,7 +32,7 @@ class BinomialPosterior(object):
 		## of observations not in that category.
 		self.h_gt = h_gt
 		self.H_t = h_gt.sum(axis=1)
-		self.h_tilde_gt = self.H_t[:,np.newaxis] - h_gt
+		self.h_tilde_gt = self.H_t.values[:,np.newaxis] - h_gt
 
 		## Construct the prior correlation matrix
 		D2 = np.diag(self.T*[-2])+np.diag((self.T-1)*[1],k=1)+np.diag((self.T-1)*[1],k=-1)
