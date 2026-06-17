@@ -59,10 +59,10 @@ if __name__ == "__main__":
             observed=False).sum().fillna(0)["weight"]
     
     # Iterpolate the table annually
-    years = np.arange(irs["year"].min(),YEAR_MAX+1,dtype=np.int64)
+    years = np.arange(sio.YEAR_MIN,sio.YEAR_MAX+1,dtype=np.int64)
     df = df.groupby(["state","area","mom_edu","mom_age"],
             observed=False).apply(
-                lambda s: s.loc[s.name].reindex(years).interpolate()
+                lambda s: s.loc[s.name].reindex(years).interpolate(limit_direction="both")
                 )
     df = df.reset_index()
 
