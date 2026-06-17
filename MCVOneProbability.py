@@ -8,6 +8,9 @@ import survey
 ## For filepaths
 import os
 
+## For performance warnings
+import warnings
+
 ## I/O functionality is built on top
 ## of pandas
 import numpy as np
@@ -130,7 +133,7 @@ if __name__ == "__main__":
                                       for m in np.arange(1,13)]
     #full_time = full_time[7:]
     full_time = set(full_time)
-    general_correlation_time = (24**4)/8.
+    general_correlation_time = (12**4)/8.
     corr_time = {"borno":(12**4)/8,"ebonyi":(12**4)/8,"gombe":(12**4)/8,
                  "lagos":(12**4)/8,"oyo":(12**4)/8,"zamfara":(12**4)/8,
                  "osun":(12**4)/8}
@@ -151,20 +154,21 @@ if __name__ == "__main__":
         
         ## Set up the regression problem's design matrix and 
         ## response vector
-        Y = sf[response].astype(float)
-        X = []
-        for f in features:
-            this_f = pd.get_dummies(sf[f],dtype=float)
-            this_f.columns = [str(c) for c in this_f.columns]
-            if f == "time":
-                missing_times = full_time-set(this_f.columns)
-                for c in missing_times:
-                    this_f[c] = np.zeros((len(this_f),))
-                this_f = this_f[sorted(this_f.columns)]
-                this_f.columns = "time:"+this_f.columns
-            X.append(this_f)
-        X = pd.concat(X,axis=1)
-        #X["bord"] = sf["bord"].copy().astype(float)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
+            Y = sf[response].astype(float)
+            X = []
+            for f in features:
+                this_f = pd.get_dummies(sf[f],dtype=float)
+                this_f.columns = [str(c) for c in this_f.columns]
+                if f == "time":
+                    missing_times = full_time-set(this_f.columns)
+                    for c in missing_times:
+                        this_f[c] = np.zeros((len(this_f),))
+                    this_f = this_f[sorted(this_f.columns)]
+                    this_f.columns = "time:"+this_f.columns
+                X.append(this_f)
+            X = pd.concat(X,axis=1)
 
         ## Define the intercept
         X["intercept"] = np.ones((len(X),))
