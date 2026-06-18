@@ -134,11 +134,11 @@ if __name__ == "__main__":
             plt.show()
             sys.exit()
 
-        ## Take the average over the 4 year bin (essentially uniformly distributing the
+        ## Take the average over the 5 year bin (essentially uniformly distributing the
         ## births over the age-bin) and correct (coarsely) for this being an estimate on
         ## married women only.
         married_correction = 1.#-never_married[r.loc["v013"]]
-        total_pr_birth *= (1./4.)*married_correction
+        total_pr_birth *= (1./5.)*married_correction
 
         ## Store the result
         pr_birth_last_year[i] = total_pr_birth
