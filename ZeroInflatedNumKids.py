@@ -23,12 +23,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 # For loading, renaming, and unifying DHS and MICS data
 import survey_io as sio
 
-def axes_setup(axes):
-    axes.spines["left"].set_position(("axes",-0.025))
-    axes.spines["top"].set_visible(False)
-    axes.spines["right"].set_visible(False)
-    return
-
 if __name__ == "__main__":
 
     ## Get the DHS data via pandas
