@@ -40,7 +40,8 @@ import numpy as np
 # -------------------------------------------------------------------
 # Time configuration across all the different estimates
 # -------------------------------------------------------------------
-YEAR_MIN = 2006
+YEAR_MIN = 2006 # should be <= 2 years before the earliest survey, 
+                # to not drop 1-2 yr olds at that survey time.
 YEAR_MAX = 2024 # inclusive, i.e. through YEAR_MAX
 
 # -------------------------------------------------------------------
@@ -163,6 +164,8 @@ MICS4_WM_SCHEMA = MICS5_WM_SCHEMA = {
      "WB1M":"mom_birth_mon", ## mom's birth month
      "WB1Y":"mom_birth_year", ## mom's birth year
      "WB4":"mom_edu", ## mom's education
+     "CM1":"given_birth", ## has the woman given birth?
+     "CM10":"num_brs", ## number of births
      "HH6":"area", ## urban/rural
      "HH7":"state", ## state 
      "Zone":"region", ## region
@@ -179,6 +182,8 @@ MICS6_WM_SCHEMA = {
      "WB3M":"mom_birth_mon", ## mom's birth month
      "WB3Y":"mom_birth_year", ## mom's birth year
      "WB6A":"mom_edu", ## mom's education
+     "CM1":"given_birth", ## has the woman given birth?
+     "CM11":"num_brs", ## number of live births    
      "HH6":"area", ## urban/rural
      "HH7":"state", ## state 
      "zone":"region", ## region
