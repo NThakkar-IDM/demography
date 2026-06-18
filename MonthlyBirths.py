@@ -101,7 +101,7 @@ if __name__ == "__main__":
     ## since YearlyBirths.py shifts years by 1.
     population = GetWBPopulation("_open_data",
                                  countries=["nigeria"],
-                                 years=(sio.YEAR_MIN-1,sio.YEAR_MAX+1))
+                                 years=(sio.YEAR_MIN-1,2025)) ## Max here set by WB data
     population["year"] = population["year"].astype(np.int64)
     population = population[["year","population"]].set_index("year")["population"]
     
