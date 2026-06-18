@@ -1,10 +1,11 @@
 """
 MCVOneProbability.py
 
-Estimate P(MCV1 received) by child's birth year, stratified by:
-  - province
+Estimate P(MCV1 received) by child's birth year, stratified by state, 
+and conditional on:
   - area (urban/rural)
   - mom_edu
+  - and time
 
 Approach:
   - Pool DHS (KR+IR merge) and MICS (CH+WM merge)
@@ -19,111 +20,34 @@ Dependencies: survey_io
 Outputs:
   - ../../pickle_jar/mcv1_prob_pred.pkl
 """
-
 import os
+import sys
 import numpy as np
 import pandas as pd
 
+## For statistical modeling
 import statsmodels.api as sm
 import patsy
 
-from demography.survey_io import load_survey, infer_survey_folder
+## For compiling survey data
+sys.path.append("..\\")
+from survey_io import load_survey, infer_survey_name,\
+                      dhs_kr_paths, dhs_ir_paths,\
+                      mics_ch_paths, mics_wm_paths,\
+                      cms_to_datetime
 
 # ------------------------------------------------------------
 # Config
 # ------------------------------------------------------------
-
-MIN_YEAR = 2005
-MAX_YEAR = 2018
+MIN_YEAR = 2006
+MAX_YEAR = 2024
 
 # B-spline degrees of freedom for the year effect (lower = smoother)
-YEAR_SPLINE_DF = 4
-
-BASE = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-SURVEYS = os.path.join(BASE, "_data", "_surveys")
-
-# ------------------------------------------------------------
-# Load DHS and MICS data
-# ------------------------------------------------------------
-
-dhs_kr_paths = [
-    os.path.join(SURVEYS, "DHS5_2006", "PKKR52DT", "pkkr52fl.dta"),
-    os.path.join(SURVEYS, "DHS6_2012", "PKKR61DT", "PKKR61FL.DTA"),
-    os.path.join(SURVEYS, "DHS7_2017", "PKKR71DT", "PKKR71FL.DTA"),
-]
-
-kr_columns = ["caseid", "bord", "child_DoB", "live_child", "mom_DoB", "interview_date", "mcv1"]
-
-krs = {
-    infer_survey_folder(path): load_survey(path, False, True, kr_columns)
-    for path in dhs_kr_paths
-}
-
-dhs_ir_paths = [
-    os.path.join(SURVEYS, "DHS5_2006", "PKIR52DT", "pkir52fl.dta"),
-    os.path.join(SURVEYS, "DHS6_2012", "PKIR61DT", "PKIR61FL.DTA"),
-    os.path.join(SURVEYS, "DHS7_2017", "PKIR71DT", "PKIR71FL.DTA"),
-]
-
-ir_columns = ["caseid", "mom_edu", "province", "area", "num_brs", "mom_age"]
-
-irs = {
-    infer_survey_folder(path): load_survey(path, True, True, ir_columns)
-    for path in dhs_ir_paths
-}
-
-mics_ch_paths = [
-    os.path.join(SURVEYS, "MICS4_Balochistan_2010", "ch.sav"),
-    os.path.join(SURVEYS, "MICS4_Punjab_2011", "ch.sav"),
-    os.path.join(SURVEYS, "MICS5_GB_2016", "ch.sav"),
-    os.path.join(SURVEYS, "MICS5_KP_2016", "ch.sav"),
-    os.path.join(SURVEYS, "MICS5_Punjab_2014", "ch.sav"),
-    os.path.join(SURVEYS, "MICS5_Sindh_2014", "ch.sav"),
-    os.path.join(SURVEYS, "MICS6_Balochistan_2019", "ch.sav"),
-    os.path.join(SURVEYS, "MICS6_KP_2019", "ch.sav"),
-    os.path.join(SURVEYS, "MICS6_Punjab_2017", "ch.sav"),
-    os.path.join(SURVEYS, "MICS6_Sindh_2018", "ch.sav"),
-]
-
-ch_columns = ["cluster", "hh", "line_num", "child_birth_day", "child_birth_mon", "child_birth_year", "child_age", "mcv1"]
-
-chs = {
-    infer_survey_folder(path): load_survey(path, False, True, ch_columns)
-    for path in mics_ch_paths
-}
-
-mics_wm_paths = [
-    os.path.join(SURVEYS, "MICS4_Balochistan_2010", "wm.sav"),
-    os.path.join(SURVEYS, "MICS4_Punjab_2011", "wm.sav"),
-    os.path.join(SURVEYS, "MICS5_GB_2016", "wm.sav"),
-    os.path.join(SURVEYS, "MICS5_KP_2016", "wm.sav"),
-    os.path.join(SURVEYS, "MICS5_Punjab_2014", "wm.sav"),
-    os.path.join(SURVEYS, "MICS5_Sindh_2014", "wm.sav"),
-    os.path.join(SURVEYS, "MICS6_Balochistan_2019", "wm.sav"),
-    os.path.join(SURVEYS, "MICS6_KP_2019", "wm.sav"),
-    os.path.join(SURVEYS, "MICS6_Punjab_2017", "wm.sav"),
-    os.path.join(SURVEYS, "MICS6_Sindh_2018", "wm.sav"),
-]
-
-wm_columns = ["cluster", "hh", "line_num", "interview_day", "interview_mon", "year", "mom_edu", "mom_age", "area", "province"]
-
-wms = {
-    infer_survey_folder(path): load_survey(path, True, True, wm_columns)
-    for path in mics_wm_paths
-}
+YEAR_SPLINE_DF = 6
 
 # ------------------------------------------------------------
 # Helper functions
 # ------------------------------------------------------------
-
-def cms_to_datetime(cmc, d=15, min_cmc=1, max_cmc=2000):
-    """Convert DHS century-month codes to datetime."""
-    s = pd.to_numeric(pd.Series(cmc), errors="coerce").astype(float)
-    s = s.where((s >= min_cmc) & (s <= max_cmc), np.nan)
-    years = 1900 + np.floor((s - 1) / 12.0)
-    months = ((s - 1) % 12) + 1
-    return pd.to_datetime({"year": years, "month": months, "day": d}, errors="coerce")
-
 
 def _build_design_matrix(data, year_col, edu_col, area_col, year_df,
                          design_info=None, year_lower=None, year_upper=None):
@@ -181,7 +105,7 @@ def fit_glm_one_province(
     glm_result = glm.fit()
 
     # Full year grid (every year in the window, not just observed)
-    all_years = list(range(year_min, year_max + 1))
+    all_years = list(np.arange(year_min, year_max + 1,dtype=float))
 
     return {
         "success": True,
@@ -349,63 +273,100 @@ def build_mcv1_predictions_with_obs(
 
     return out
 
-
-# ------------------------------------------------------------
-# Main script
-# ------------------------------------------------------------
 if __name__ == "__main__":
 
-    # Merge DHS KR + IR
-    dhs_parts = []
+    # Get the relevant DHS data
+    kr_columns = ["caseid", "bord", "child_DoB", "live_child", 
+                  "mom_DoB", "interview_date", "mcv1"]
+    krs = {infer_survey_name(path): load_survey(path, False, True, kr_columns)
+            for path in dhs_kr_paths}
+    ir_columns = ["caseid", "mom_edu", "state", "area", "num_brs", "mom_age"]
+    irs = {infer_survey_name(path): load_survey(path, True, True, ir_columns)
+            for path in dhs_ir_paths}
+    
+    # Merge them and put it all together
+    dhs = []
     for k in krs.keys():
-        this_dhs = krs[k].merge(irs[k], on="caseid", how="left", validate="m:1")
-        dhs_parts.append(this_dhs)
-    dhs = pd.concat(dhs_parts, axis=0).sort_values(["survey", "caseid", "bord"]).reset_index(drop=True)
+        this_dhs = krs[k].merge(irs[k],
+                    on="caseid",
+                    how="left",
+                    validate="m:1",
+                    )
+        dhs.append(this_dhs)
+    dhs = pd.concat(dhs,axis=0)
+    dhs = dhs.sort_values(["survey","caseid","bord"]).reset_index(drop=True)
+    print("\nThe DHS data for this analysis:")
+    print(dhs)
+
+    # Now shift to the MICS data
+    ch_columns = ["cluster", "hh", "line_num", 
+                  "child_birth_day", "child_birth_mon","child_birth_year",
+                  "mcv1"]
+    chs = {infer_survey_name(path): load_survey(path, False, True, ch_columns)
+            for path in mics_ch_paths}
+    wm_columns = ["cluster", "hh", "line_num",
+                  "interview_day","interview_mon","interview_year",
+                  "mom_birth_mon","mom_birth_year", 
+                  "mom_edu", "area", "state"]
+    wms = {infer_survey_name(path): load_survey(path, True, True, wm_columns)
+            for path in mics_wm_paths}
+    
+    # Merge them and put it all together 
+    mics = []
+    for k in chs.keys():
+        this_mics = chs[k].merge(wms[k],
+                    on=["cluster","hh","line_num"],
+                    how="left",
+                    validate="m:1",
+                    )
+        mics.append(this_mics)
+    mics = pd.concat(mics,axis=0).reset_index(drop=True)
+    print("\nThe MICS data for this analysis:")
+    print(mics)
 
     # Restrict to alive children aged 12-23 months
     dhs["child_age"] = dhs["interview_date"] - dhs["child_DoB"]
     dhs = dhs.loc[(dhs["live_child"] == "yes") & (dhs["child_age"] >= 12) & (dhs["child_age"] < 24)].copy()
-    dhs["birth_year"] = cms_to_datetime(dhs["child_DoB"]).dt.year
-
-    # Merge MICS CH + WM
-    mics_parts = []
-    for k in chs.keys():
-        this_mics = chs[k].merge(wms[k], on=["cluster", "hh", "line_num"], how="left", validate="m:1")
-        mics_parts.append(this_mics)
-    mics = pd.concat(mics_parts, axis=0).reset_index(drop=True)
-
+    dhs["child_DoB"] = cms_to_datetime(dhs["child_DoB"])
+    
+    # And for the MICS, cmpute child age in months
     mics["child_DoB"] = pd.to_datetime(
-        {"month": mics["child_birth_mon"], "year": mics["child_birth_year"], "day": mics["child_birth_day"]},
-        errors="coerce",
-    )
+        {"month": mics["child_birth_mon"],
+         "year": mics["child_birth_year"], 
+         "day": mics["child_birth_day"]},
+            errors="coerce")
     mics["interview_date"] = pd.to_datetime(
-        {"month": mics["interview_mon"], "year": mics["year"], "day": mics["interview_day"]},
-        errors="coerce",
-    )
-    mics["child_age_m"] = 12.0 * ((mics["interview_date"] - mics["child_DoB"]).dt.days / 365.0)
-    mics["child_age_m"] = mics["child_age_m"].fillna(mics["child_age"])
-    mics = mics.loc[(mics["child_age_m"] >= 12) & (mics["child_age_m"] < 24)].copy()
-    mics = mics.loc[~mics["mom_age"].isna()].copy()
-    mics["birth_year"] = mics["child_birth_year"]
+        {"month": mics["interview_mon"], 
+         "year": mics["interview_year"], 
+         "day": mics["interview_day"]},
+            errors="coerce")
+    mics["child_age"] = 12.0 * ((mics["interview_date"] - mics["child_DoB"]).dt.days / 365.0)
+    mics = mics.loc[(mics["child_age"] >= 12) & (mics["child_age"] < 24)].copy()
+    
+    # Create the birth time covariate, which is a continuous time
+    dhs["time"] = dhs["child_DoB"].dt.year + (dhs["child_DoB"].dt.dayofyear-1)/365.
+    mics["time"] = mics["child_DoB"].dt.year + (mics["child_DoB"].dt.dayofyear-1)/365.
 
     # Combine and fit
-    variables = ["area", "province", "mom_edu", "birth_year", "mcv1"]
+    variables = ["survey","area", "state", "mom_edu", "time", "mcv1"]
     df = pd.concat([dhs[variables], mics[variables]], axis=0).reset_index(drop=True)
-    df = df.loc[df.notnull().all(axis=1)].reset_index(drop=True)
-    df = df.loc[(df["birth_year"] >= MIN_YEAR) & (df["birth_year"] <= MAX_YEAR)].copy()
+    #print(df)
+    #sys.exit()
+    #df = df.loc[(df["birth_year"] >= MIN_YEAR) & (df["birth_year"] <= MAX_YEAR)].copy()
 
     out = build_mcv1_predictions_with_obs(
         df,
         y_col="mcv1",
-        year_col="birth_year",
+        year_col="time",
         edu_col="mom_edu",
         area_col="area",
-        prov_col="province",
+        prov_col="state",
         year_df=YEAR_SPLINE_DF,
     )
 
     # Standard error on probability scale
     out["std_prob"] = np.sqrt(out["var_prob"].clip(lower=0))
+    print(out)
 
     print("\n", out.head(15))
     print("\nVariance breakdown (means across cells):")
@@ -414,4 +375,4 @@ if __name__ == "__main__":
     print(f"  var_prob:     {out['var_prob'].mean():.8f}")
     print(f"  std_prob:     {out['std_prob'].mean():.6f}")
 
-    out.to_pickle("../../pickle_jar/mcv1_prob_pred.pkl")
+    #out.to_pickle("../../pickle_jar/mcv1_prob_pred.pkl")
