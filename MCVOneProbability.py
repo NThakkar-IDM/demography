@@ -118,7 +118,7 @@ if __name__ == "__main__":
                                       for m in np.arange(1,13)]
     #full_time = full_time[7:]
     full_time = set(full_time)
-    general_correlation_time = (12**4)/8.
+    general_correlation_time = (18**4)/8.
     corr_time = {"borno":(12**4)/8,"ebonyi":(12**4)/8,"gombe":(12**4)/8,
                  "lagos":(12**4)/8,"oyo":(12**4)/8,"zamfara":(12**4)/8,
                  "osun":(12**4)/8}
