@@ -42,7 +42,7 @@ import numpy as np
 # -------------------------------------------------------------------
 YEAR_MIN = 2006 # should be <= 2 years before the earliest survey, 
                 # to not drop 1-2 yr olds at that survey time.
-YEAR_MAX = 2024 # inclusive, i.e. through YEAR_MAX
+YEAR_MAX = 2026 # inclusive, i.e. through YEAR_MAX
 
 # -------------------------------------------------------------------
 # Paths to survey data
