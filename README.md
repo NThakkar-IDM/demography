@@ -1,16 +1,15 @@
-# pakistan-immunity-profiles
+# Nigeria's measles demographics 
 
-This repository is intended to serve as a partial update or complement to https://github.com/NThakkar-IDM/intensification/. Each file works towards the eventual generation of province-level and national measles immunity profiles for Pakistan (SurvivalPrior.py).
+This repository is intended to serve as a partial update or complement to https://github.com/NThakkar-IDM/intensification/. That repository contained a set of methods for working with survey data to generate key demographic inputs for measles transmission models. This repository updates those methods to be more interpretable, robust, and adapatable to new survey data as it comes. 
 
-Methodological updates are summarized in Immunity_Profile_Methods_Updates.pdf. Updates to the intensification codebase include these methodological changes, as well as the following:
-1. Unified processing of DHS and MICS data (demography/survey_io.py).
-2. Rewrites of demography code to utilize statsmodels machinery in favor of custom regression code.
-3. Automatic extrapolation (and optional rescaling) of estimated birth rate and MCV coverage trends based on national World Bank and WHO estimates (extrapolate_trends.py).
-4. Compilation of demography outputs into datasets that can be fed seamlessly into SurvivalPrior.py (CompileDatasets.py).
-5. Accounting of province- and age- eligibility for SIAS (CompileDatasets.py) that is incorporated into a timeline of vaccination opportunities based on semimonth of birth, allowing SIAS to sit pre-MCV1 age as well as between MCV1 and MCV2 ages (survival_prior_core.py).
+Work through the scripts like so:
+1. `survey_io.py` contains the user interface difference pieces of survey data, where column names are harmonized, the data is cleaned, and finally checked for consistency. Functions and objects from this script are called throughout. Critically, the time-window for all estimates downstream is configured in this script.
+2. `MomDistribution.py` pulls post-stratification weights from only the DHS surveys in the dataset, and then interpolates them for use estimates throughout.
+3. Then estimate routine vaccination coverage by creating a regression model in `MCVOneProbability.py` and post-stratifying in `MCVOneCoverageEstimates.py`.
+4. Move on to estimating yearly births. Start by building the regression models in `AgeAtKthKid.py` and `ZeroInflatedNumKids.py`. Then post-stratify in `YearlyBirths.py`.
+5. Finally upsample to monthly births. Start by estimating birth-seasonality in `BirthSeasonality.py`, and then use those estimates in `MonthlyBirths.py`.
 
-This repository uses the same environment.yml as the intensification codebase, and assumes the user already has the following:
-1. A linelist of cases with age in months, date of onset, number of vaccine doses received, province, final status (lab-confirmed, epi-linked, discarded, clinically compatible). This linelist should be regressed using the intensification/methods/epi_curves workflow, so that clinically compatible cases get assigned a confirmation probability. This regressed linelist should be put in the pickle_jar directory.
-2. DHS and/or MICS survey data in the _data/_survey directory. Note that survey_io.py requires specific file names and structures (see demography/survey_io.py for more detail).
-3. World Bank national population and birth rate estimates in the _data repository.
-4. WHO national MCV1 and MCV2 coverage estimates in the _data repository. 
+
+This repository uses the same `environment.yml` as the intensification codebase, and assumes the user already has the following:
+1. DHS, MICS, and/or other survey data in an organized directory. Note that `survey_io.py` requires specific file names and structures (see the comments for details).
+2. Some national population estimate over time. Here, we use the World Bank's, included in `_open_data\`.
