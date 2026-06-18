@@ -158,7 +158,7 @@ def FitModel(log_post):
 
 	## Step 2: fit the NB portion
 	nb_result =  minimize(lambda x: -log_post.nb_post(x),
-						  x0 = np.zeros((log_post.nb_post.p,)),
+						  x0 = 0.333*np.ones((log_post.nb_post.p,)),
 						  method = "BFGS",
 						  jac = lambda x: -log_post.nb_post.gradient(x),
 						  )
