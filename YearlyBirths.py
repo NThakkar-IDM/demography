@@ -115,13 +115,16 @@ if __name__ == "__main__":
             #   transparent=True)
 
             ## Age at birth
-            #age_dists = age_dists/(k_pmf[1:,np.newaxis])
+            age_dists = age_dists/(k_pmf[1:,np.newaxis])
             fig, axes = plt.subplots(figsize=(10,5))
             axes.spines["left"].set_visible(False)
             axes.spines["top"].set_visible(False)
             axes.spines["right"].set_visible(False)
             for i,a in enumerate(age_dists):
-                axes.plot(ages,a,color=colors[i+1],lw=2,zorder=2,label=k[i+1])
+                if True: #k[i+1] in [3,8]:
+                    axes.plot(ages,a,color=colors[i+1],lw=2,zorder=2,label=k[i+1])
+                else:
+                    axes.plot(ages,a,color="None",lw=2,zorder=2,label=k[i+1])
             age_range = ages[(int(l)-1)*12-1:(int(h)-1)*12]
             axes.axvspan(age_range[0],age_range[-1],
                          facecolor="grey",edgecolor="None",alpha=0.5)
@@ -135,10 +138,8 @@ if __name__ == "__main__":
             sys.exit()
 
         ## Take the average over the 5 year bin (essentially uniformly distributing the
-        ## births over the age-bin) and correct (coarsely) for this being an estimate on
-        ## married women only.
-        married_correction = 1.#-never_married[r.loc["v013"]]
-        total_pr_birth *= (1./5.)*married_correction
+        ## births over the age-bin).
+        total_pr_birth *= (1./5.)
 
         ## Store the result
         pr_birth_last_year[i] = total_pr_birth
