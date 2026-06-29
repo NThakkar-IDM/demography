@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
             ## Set up the buckets posterior
             buckets = sb.BinomialPosterior(monthly,
-                                           correlation_time=10.,
+                                           correlation_time=15.,
                                            g2g_correlation=4.)
             result = sb.FitModel(buckets)
             print("for {}, success = {}".format(state,result.success))
