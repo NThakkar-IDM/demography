@@ -25,14 +25,19 @@ import sys
 # Input/output functionality is built on top of pandas
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # For loading, renaming, and unifying DHS and MICS data
 import survey_io as sio
 
-# --------------------------------------------------------------------
-# Config
-# --------------------------------------------------------------------
-YEAR_MAX = 2024
+def linear_fit(s):
+    xbar = s.index.values.mean()
+    x = s.index.values - xbar
+    slope = np.sum(x*s.values) / np.sum(x**2)
+    linear_s = pd.Series(np.clip(
+        slope*(s.index.values - xbar)+s.values.mean(),
+        0,None),index=s.index)
+    return linear_s
 
 if __name__ == "__main__":
 
@@ -57,23 +62,39 @@ if __name__ == "__main__":
     df = irs[["state","area","mom_edu","mom_age","weight","year"]].copy()
     df = df.groupby([c for c in df.columns if c != "weight"],
             observed=False).sum().fillna(0)["weight"]
-    
+
     # Iterpolate the table annually
     years = np.arange(sio.YEAR_MIN,sio.YEAR_MAX+1,dtype=np.int64)
     df = df.groupby(["state","area","mom_edu","mom_age"],
             observed=False).apply(
                 lambda s: s.loc[s.name].reindex(years).interpolate(limit_direction="both")
                 )
+    
+    ## Smoothing? You can replace by the average or fit
+    ## a line.
+    df = df.groupby(["state","area","mom_edu","mom_age"],
+            observed=False).apply(
+                lambda s: s.mean() + 0*s.loc[s.name]
+                #lambda s: linear_fit(s.loc[s.name])
+                )
+
+    ## Reshape
     df = df.reset_index()
 
+    # Check the normalization
+    print("\nNormalization check:")
+    total = df[["year","weight"]].groupby("year").sum()["weight"]
+    print(total)
+    if (total != 1.).any():
+        print("...failed (due to smoothing)! So we renormalize.")
+        df["weight"] *= 1./total.loc[df["year"].values].values
+    else:
+        print("...success!")
+        
     # Print and save
     print("\nTotal weight per cell:")
     print(df)
     df.to_pickle(os.path.join(
         "pickle_jar","mom_distribution.pkl")
         )
-
-    # Check the normalization
-    print("\nNormalization check:")
-    print(df[["year","weight"]].groupby("year").sum())
     
